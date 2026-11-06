@@ -26,7 +26,7 @@ export class RateLimiter {
     if (fs.existsSync(this.lockFilePath)) {
       const stats = fs.statSync(this.lockFilePath)
       const age = Date.now() - stats.ctimeMs
-      if (age > 30 * 1000) { // 30秒
+      if (age > 3 * 60 * 1000) { // 长于限流等待，避免把仍在使用的锁当成陈旧锁删掉
         try {
           fs.unlinkSync(this.lockFilePath)
           console.warn('[限流] 删除陈旧锁文件:', this.lockFilePath)
@@ -44,6 +44,12 @@ export class RateLimiter {
         else throw err
       }
     }
+  }
+
+  private touchLock() {
+    if (!this.lockFilePath || !fs.existsSync(this.lockFilePath)) return
+    const now = new Date()
+    try { fs.utimesSync(this.lockFilePath, now, now) } catch (_) {}
   }
 
   private releaseLock() {
@@ -82,6 +88,7 @@ export class RateLimiter {
       if (elapsed > 60_000) { this.requestCount = 0; this.windowStart = now }
       if (this.requestCount >= this.maxRequestsPerMinute) {
         const waitTime = 60_000 - elapsed + 100
+        this.touchLock()
         await new Promise(res => setTimeout(res, waitTime))
         this.requestCount = 0
         this.windowStart = Date.now()
