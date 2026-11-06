@@ -7,6 +7,7 @@ import { generateSitemapXml } from '@/lib/utils/sitemap.xml'
 import { DynamicLayout } from '@/themes/theme'
 import { generateRedirectJson } from '@/lib/utils/redirect'
 import { checkDataFromAlgolia } from '@/lib/plugins/algolia'
+import { adapterNotionBlockMap } from '@/lib/utils/notion.util'
 
 /**
  * 首页布局
@@ -52,7 +53,9 @@ export async function getStaticProps(req) {
       if (post.password && post.password !== '') {
         continue
       }
-      post.blockMap = await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
+      post.blockMap = adapterNotionBlockMap(
+        await getPostBlocks(post.id, 'slug', POST_PREVIEW_LINES)
+      )
     }
   }
 
